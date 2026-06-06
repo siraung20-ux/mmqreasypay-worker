@@ -1,21 +1,16 @@
 export default {
-  async fetch(request, env) {
+  async fetch(request) {
 
-    if (request.method !== "POST") {
-      return new Response("VERSION TEST 123");
-    }
-
-    try {
-      const body = await request.text();
-
-      return new Response(body, {
+    return new Response(
+      JSON.stringify({
+        method: request.method,
+        url: request.url
+      }),
+      {
         headers: {
           "content-type": "application/json"
         }
-      });
-
-    } catch (e) {
-      return new Response(e.toString());
-    }
+      }
+    );
   }
 }
