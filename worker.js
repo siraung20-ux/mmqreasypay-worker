@@ -2,7 +2,7 @@ export default {
   async fetch(request, env) {
 
     if (request.method !== "POST") {
-      return new Response("MMQR Easy Pay Bot Running");
+      return new Response("VERSION TEST 123");
     }
 
     try {
