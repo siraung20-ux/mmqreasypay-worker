@@ -1,5 +1,6 @@
 export default {
   async fetch(request, env) {
+
     if (request.method !== "POST") {
       return new Response("MMQR Easy Pay Bot Running");
     }
@@ -8,11 +9,18 @@ export default {
       const update = await request.json();
 
       if (!update.message) {
-        return new Response("OK");
+        return new Response("No message");
       }
 
       const chatId = update.message.chat.id;
       const text = update.message.text || "";
+
+      // Debug: Telegram update ရောက်တာနဲ့ reply ပြန်
+      await sendMessage(
+        env.BOT_TOKEN,
+        chatId,
+        `✅ Webhook OK\n\nYou sent: ${text}`
+      );
 
       if (text === "/start") {
         await sendMessage(
@@ -25,15 +33,16 @@ export default {
       return new Response("OK");
 
     } catch (err) {
-      return new Response(`Error: ${err.message}`, {
-        status: 500,
-      });
+      return new Response(
+        `ERROR: ${err.message}`,
+        { status: 500 }
+      );
     }
   },
 };
 
 async function sendMessage(token, chatId, text) {
-  await fetch(
+  const res = await fetch(
     `https://api.telegram.org/bot${token}/sendMessage`,
     {
       method: "POST",
@@ -42,8 +51,10 @@ async function sendMessage(token, chatId, text) {
       },
       body: JSON.stringify({
         chat_id: chatId,
-        text: text,
-      }),
+        text: text
+      })
     }
   );
+
+  return await res.text();
 }
