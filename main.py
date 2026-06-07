@@ -1,33 +1,19 @@
-from fastapi import FastAPI
-import requests
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
 import os
 
-app = FastAPI()
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-MMQR_API_KEY = os.getenv("MMQR_API_KEY")
-
-@app.get("/")
-def home():
-    return {"status": "Pella API Running"}
-
-@app.post("/create-payment")
-def create_payment(data: dict):
-
-    amount = int(data.get("amount", 0))
-
-    if amount < 500 or amount > 1000000:
-        return {"error": "Invalid amount"}
-
-    # MMQR API CALL (example format)
-    res = requests.post(
-        "https://developers.myanmyanpay.com/api/create",
-        headers={
-            "Authorization": f"Bearer {MMQR_API_KEY}"
-        },
-        json={
-            "amount": amount,
-            "currency": "MMK"
-        }
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "💸 MMQR Easy Pay\n\n"
+        "Minimum: 500 MMK\n"
+        "Maximum: 1,000,000 MMK\n\n"
+        "ငွေပမာဏ ရိုက်ထည့်ပါ။"
     )
 
-    return res.json()
+app = Application.builder().token(BOT_TOKEN).build()
+
+app.add_handler(CommandHandler("start", start))
+
+app.run_polling()
