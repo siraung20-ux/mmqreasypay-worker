@@ -1,61 +1,44 @@
 import os
-import logging
-import threading
-import requests
+import telebot
 from flask import Flask
-from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
+from threading import Thread
 
-# --- ၁။ Flask Web Server (Render Port အတွက်) ---
+# ၁။ Bot Token နဲ့ MMQR Secret ကို Environment Variable ကနေယူမယ်
+TOKEN = os.environ.get('BOT_TOKEN')
+MMQR_SECRET = os.environ.get('MMQR_API_SECRET')
+
+bot = telebot.TeleBot(TOKEN)
 app = Flask('')
 
+# ၂။ Render က Port စစ်တဲ့အခါ အောင်မြင်အောင် လုပ်ပေးတဲ့အပိုင်း
 @app.route('/')
 def home():
-    return "Bot is alive and running!"
+    return "Bot is running!"
 
-def run_flask():
-    # Render က ပေးတဲ့ PORT ကို ယူသုံးခြင်း (Default 8080)
+def run_web_server():
+    # Render ကပေးတဲ့ PORT ကို ယူသုံးမယ်၊ မရှိရင် ၈၀၈၀ သုံးမယ်
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
 
-def keep_alive():
-    t = threading.Thread(target=run_flask)
+# ၃။ Bot Command များ
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    bot.reply_to(message, "မင်္ဂလာပါ။ MMQR Bot အလုပ်လုပ်နေပါပြီ။")
+
+@bot.message_handler(commands=['check'])
+def check_status(message):
+    bot.reply_to(message, "Bot Status: Online ✅")
+
+# ၄။ Web Server နဲ့ Bot ကို တစ်ပြိုင်တည်း run ဖို့ function
+def start_bot():
+    print("Bot is starting...")
+    bot.infinity_polling()
+
+if __name__ == "__main__":
+    # Web server ကို thread တစ်ခုနဲ့ background မှာ နှိုးထားမယ်
+    t = Thread(target=run_web_server)
     t.start()
-
-# --- ၂။ Telegram Bot Logic ---
-# Logging စနစ် (Render logs မှာ ကြည့်လို့ရအောင်)
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-
-# Environment Variables များယူခြင်း
-TOKEN = os.getenv("BOT_TOKEN")
-MMQR_API_SECRET = os.getenv("MMQR_API_SECRET")
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("မင်္ဂလာပါ။ MMQR Bot မှ ကြိုဆိုပါတယ်။")
-
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("အကူအညီအတွက် /start ကို နှိပ်ပါ။")
-
-# --- ၃။ Main Execution ---
-if __name__ == '__main__':
-    # Web server ကို background မှာ စတင်နှိုးခြင်း
-    keep_alive()
     
-    if not TOKEN:
-        logging.error("Error: BOT_TOKEN is missing in environment variables!")
-    else:
-        # Bot Application ကို တည်ဆောက်ခြင်း
-        application = ApplicationBuilder().token(TOKEN).build()
-        
-        # Handlers များ ထည့်သွင်းခြင်း
-        application.add_handler(CommandHandler('start', start))
-        application.add_handler(CommandHandler('help', help_command))
-        
-        logging.info("Bot started. Listening for messages...")
-        
-        # Polling စနစ်ဖြင့် Bot ကို စတင် run ခြင်း
-        application.run_polling()
-
+    # Bot ကို main thread မှာ run မယ်
+    start_bot()
+    
